@@ -1,0 +1,362 @@
+一、编译安装
+
+以下安装步骤是在已有PHP5的环境下进行的，不保证能够顺利完成，仅供参考。
+①、下载PHP
+
+Shell
+cd /usr/local/src
+#下载安装包
+wget http://cn2.php.net/distributions/php-7.0.0.tar.gz
+1
+2
+3
+    
+cd /usr/local/src
+#下载安装包
+wget http://cn2.php.net/distributions/php-7.0.0.tar.gz
+
+这是PHP官方的PHP7.0正式版的国内CDN下载地址，可以放心下载。
+②、解压编译
+
+基本大家伙都已经安装了PHP的5.6或更老的版本，所以我们可以编译安装到一个新的路径。
+Shell
+#进入安装目录
+cd php-7.0.0
+
+#编译安装
+#因为是在已经有PHP5.6的环境下安装，下面的参数基本不会报错，如果报错，那么缺少什么就补什么吧！
+CFLAGS= CXXFLAGS= ./configure --prefix=/usr/local/php7 --with-config-file-path=/usr/local/php7/etc \
+--with-fpm-user=www --with-fpm-group=www --enable-fpm --enable-opcache \
+--disable-fileinfo --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-jpeg-dir \
+--with-iconv-dir=/usr/local --with-freetype-dir  --with-png-dir --with-zlib --disable-rpath \
+--with-libxml-dir=/usr --enable-xml  --enable-bcmath --enable-shmop --enable-exif --with-curl \
+--enable-sysvsem --enable-inline-optimization  --enable-mbregex --enable-inline-optimization \
+--enable-mbstring --with-mcrypt --with-gd --enable-gd-native-ttf --with-openssl \
+--with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-ftp \
+--with-gettext --enable-zip --enable-soap --disable-ipv6 --disable-debug
+
+#继续make
+make ZEND_EXTRA_LIBS='-liconv'
+
+#最后make install完成安装
+make install
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+    
+#进入安装目录
+cd php-7.0.0
+ 
+#编译安装
+#因为是在已经有PHP5.6的环境下安装，下面的参数基本不会报错，如果报错，那么缺少什么就补什么吧！
+CFLAGS= CXXFLAGS= ./configure --prefix=/usr/local/php7 --with-config-file-path=/usr/local/php7/etc \
+--with-fpm-user=www --with-fpm-group=www --enable-fpm --enable-opcache \
+--disable-fileinfo --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-jpeg-dir \
+--with-iconv-dir=/usr/local --with-freetype-dir  --with-png-dir --with-zlib --disable-rpath \
+--with-libxml-dir=/usr --enable-xml  --enable-bcmath --enable-shmop --enable-exif --with-curl \
+--enable-sysvsem --enable-inline-optimization  --enable-mbregex --enable-inline-optimization \
+--enable-mbstring --with-mcrypt --with-gd --enable-gd-native-ttf --with-openssl \
+--with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-ftp \
+--with-gettext --enable-zip --enable-soap --disable-ipv6 --disable-debug
+ 
+#继续make
+make ZEND_EXTRA_LIBS='-liconv'
+ 
+#最后make install完成安装
+make install
+
+上面的编译安装激活了opcache缓存，如果不需要可以去掉 --enable-opcache，个人推荐使用。
+③、设置参数
+
+Shell
+#以下操作均在php-7.0.0这个安装目录下执行
+php_install_dir=/usr/local/php7
+cp php.ini-production $php_install_dir/etc/php.ini
+Mem=`free -m | awk '/Mem:/{print $2}'`
+if [ $Mem -gt 1024 -a $Mem -le 1500 ];then
+    Memory_limit=192
+elif [ $Mem -gt 1500 -a $Mem -le 3500 ];then
+    Memory_limit=256
+elif [ $Mem -gt 3500 -a $Mem -le 4500 ];then
+    Memory_limit=320
+elif [ $Mem -gt 4500 ];then
+    Memory_limit=448
+else
+    Memory_limit=128
+fi
+sed -i "s@^memory_limit.*@memory_limit = ${Memory_limit}M@" $php_install_dir/etc/php.ini
+sed -i 's@^output_buffering =@output_buffering = On\noutput_buffering =@' $php_install_dir/etc/php.ini
+sed -i 's@^;cgi.fix_pathinfo.*@cgi.fix_pathinfo=0@' $php_install_dir/etc/php.ini
+sed -i 's@^short_open_tag = Off@short_open_tag = On@' $php_install_dir/etc/php.ini
+sed -i 's@^expose_php = On@expose_php = Off@' $php_install_dir/etc/php.ini
+sed -i 's@^request_order.*@request_order = "CGP"@' $php_install_dir/etc/php.ini
+sed -i 's@^;date.timezone.*@date.timezone = Asia/Shanghai@' $php_install_dir/etc/php.ini
+sed -i 's@^post_max_size.*@post_max_size = 50M@' $php_install_dir/etc/php.ini
+sed -i 's@^upload_max_filesize.*@upload_max_filesize = 50M@' $php_install_dir/etc/php.ini
+sed -i 's@^;upload_tmp_dir.*@upload_tmp_dir = /tmp@' $php_install_dir/etc/php.ini
+sed -i 's@^max_execution_time.*@max_execution_time = 600@' $php_install_dir/etc/php.ini
+sed -i 's@^;realpath_cache_size.*@realpath_cache_size = 2M@' $php_install_dir/etc/php.ini
+sed -i 's@^disable_functions.*@disable_functions = passthru,exec,system,chroot,chgrp,chown,shell_exec,proc_open,proc_get_status,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,stream_socket_server,fsocket,popen@' $php_install_dir/etc/php.ini
+sed -i 's@^session.cookie_httponly.*@session.cookie_httponly = 1@' $php_install_dir/etc/php.ini
+sed -i 's@^mysqlnd.collect_memory_statistics.*@mysqlnd.collect_memory_statistics = On@' $php_install_dir/etc/php.ini
+[ -e /usr/sbin/sendmail ] && sed -i 's@^;sendmail_path.*@sendmail_path = /usr/sbin/sendmail -t -i@' $php_install_dir/etc/php.ini
+#如果编译时去掉了 --enable-opcache，则以下包含opcache的都请忽略
+sed -i 's@^\[opcache\]@[opcache]\nzend_extension=opcache.so@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.enable=.*@opcache.enable=1@' $php_install_dir/etc/php.ini
+sed -i "s@^;opcache.memory_consumption.*@opcache.memory_consumption=$Memory_limit@" $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.interned_strings_buffer.*@opcache.interned_strings_buffer=8@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.max_accelerated_files.*@opcache.max_accelerated_files=4000@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.revalidate_freq.*@opcache.revalidate_freq=60@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.save_comments.*@opcache.save_comments=0@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.fast_shutdown.*@opcache.fast_shutdown=1@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.validate_timestamps.*@opcache.validate_timestamps=1@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.enable_cli.*@opcache.enable_cli=1@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.use_cwd.*@opcache.use_cwd=1@' $php_install_dir/etc/php.ini
+sed -i 's@^opcache.max_accelerated_files.*@opcache.max_accelerated_files=100000@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.max_wasted_percentage.*@opcache.max_wasted_percentage=5@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.consistency_checks.*@opcache.consistency_checks=0@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.optimization_level.*@;opcache.optimization_level=0@' $php_install_dir/etc/php.ini
+
+# php-fpm直接沿用之前的配置即可
+cp -f /usr/local/php/etc/php-fpm.conf /usr/local/php7/etc/
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+    
+#以下操作均在php-7.0.0这个安装目录下执行
+php_install_dir=/usr/local/php7
+cp php.ini-production $php_install_dir/etc/php.ini
+Mem=`free -m | awk '/Mem:/{print $2}'`
+if [ $Mem -gt 1024 -a $Mem -le 1500 ];then
+    Memory_limit=192
+elif [ $Mem -gt 1500 -a $Mem -le 3500 ];then
+    Memory_limit=256
+elif [ $Mem -gt 3500 -a $Mem -le 4500 ];then
+    Memory_limit=320
+elif [ $Mem -gt 4500 ];then
+    Memory_limit=448
+else
+    Memory_limit=128
+fi
+sed -i "s@^memory_limit.*@memory_limit = ${Memory_limit}M@" $php_install_dir/etc/php.ini
+sed -i 's@^output_buffering =@output_buffering = On\noutput_buffering =@' $php_install_dir/etc/php.ini
+sed -i 's@^;cgi.fix_pathinfo.*@cgi.fix_pathinfo=0@' $php_install_dir/etc/php.ini
+sed -i 's@^short_open_tag = Off@short_open_tag = On@' $php_install_dir/etc/php.ini
+sed -i 's@^expose_php = On@expose_php = Off@' $php_install_dir/etc/php.ini
+sed -i 's@^request_order.*@request_order = "CGP"@' $php_install_dir/etc/php.ini
+sed -i 's@^;date.timezone.*@date.timezone = Asia/Shanghai@' $php_install_dir/etc/php.ini
+sed -i 's@^post_max_size.*@post_max_size = 50M@' $php_install_dir/etc/php.ini
+sed -i 's@^upload_max_filesize.*@upload_max_filesize = 50M@' $php_install_dir/etc/php.ini
+sed -i 's@^;upload_tmp_dir.*@upload_tmp_dir = /tmp@' $php_install_dir/etc/php.ini
+sed -i 's@^max_execution_time.*@max_execution_time = 600@' $php_install_dir/etc/php.ini
+sed -i 's@^;realpath_cache_size.*@realpath_cache_size = 2M@' $php_install_dir/etc/php.ini
+sed -i 's@^disable_functions.*@disable_functions = passthru,exec,system,chroot,chgrp,chown,shell_exec,proc_open,proc_get_status,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,stream_socket_server,fsocket,popen@' $php_install_dir/etc/php.ini
+sed -i 's@^session.cookie_httponly.*@session.cookie_httponly = 1@' $php_install_dir/etc/php.ini
+sed -i 's@^mysqlnd.collect_memory_statistics.*@mysqlnd.collect_memory_statistics = On@' $php_install_dir/etc/php.ini
+[ -e /usr/sbin/sendmail ] && sed -i 's@^;sendmail_path.*@sendmail_path = /usr/sbin/sendmail -t -i@' $php_install_dir/etc/php.ini
+#如果编译时去掉了 --enable-opcache，则以下包含opcache的都请忽略
+sed -i 's@^\[opcache\]@[opcache]\nzend_extension=opcache.so@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.enable=.*@opcache.enable=1@' $php_install_dir/etc/php.ini
+sed -i "s@^;opcache.memory_consumption.*@opcache.memory_consumption=$Memory_limit@" $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.interned_strings_buffer.*@opcache.interned_strings_buffer=8@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.max_accelerated_files.*@opcache.max_accelerated_files=4000@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.revalidate_freq.*@opcache.revalidate_freq=60@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.save_comments.*@opcache.save_comments=0@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.fast_shutdown.*@opcache.fast_shutdown=1@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.validate_timestamps.*@opcache.validate_timestamps=1@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.enable_cli.*@opcache.enable_cli=1@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.use_cwd.*@opcache.use_cwd=1@' $php_install_dir/etc/php.ini
+sed -i 's@^opcache.max_accelerated_files.*@opcache.max_accelerated_files=100000@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.max_wasted_percentage.*@opcache.max_wasted_percentage=5@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.consistency_checks.*@opcache.consistency_checks=0@' $php_install_dir/etc/php.ini
+sed -i 's@^;opcache.optimization_level.*@;opcache.optimization_level=0@' $php_install_dir/etc/php.ini
+ 
+# php-fpm直接沿用之前的配置即可
+cp -f /usr/local/php/etc/php-fpm.conf /usr/local/php7/etc/
+
+Ps：以上参数等代码从lnmp一键安装包中提取。
+④、版本替换
+
+php 7 已经安装到了 /usr/local/php7，为了让2个版本暂时都存在，方便过渡，这里我们使用软链接搞定
+Shell
+#停止php-fpm
+service php-fpm stop
+
+#重命名php老版本
+cd /usr/local
+mv php php5
+
+#建立php7的软链接
+ln -s php7 php
+
+#启动php-fpm
+service php-fpm start
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+    
+#停止php-fpm
+service php-fpm stop
+ 
+#重命名php老版本
+cd /usr/local
+mv php php5
+ 
+#建立php7的软链接
+ln -s php7 php
+ 
+#启动php-fpm
+service php-fpm start
+
+哦了，做完以上步骤，要是没报错基本就已经搞定了，执行一下php --version 应该可以看到版本信息了
+Shell
+PHP 7.0.0 (cli) (built: Dec  2 2015 19:44:28) ( NTS )
+Copyright (c) 1997-2015 The PHP Group
+Zend Engine v3.0.0, Copyright (c) 1998-2015 Zend Technologies
+    with Zend OPcache v7.0.6-dev, Copyright (c) 1999-2015, by Zend Technologies
+1
+2
+3
+4
+    
+PHP 7.0.0 (cli) (built: Dec  2 2015 19:44:28) ( NTS )
+Copyright (c) 1997-2015 The PHP Group
+Zend Engine v3.0.0, Copyright (c) 1998-2015 Zend Technologies
+    with Zend OPcache v7.0.6-dev, Copyright (c) 1999-2015, by Zend Technologies
+
+二、问题解决
+
+升级到PHP7之后，网站不出意外的白屏了！但是，不必惊慌，静下心来看看是什么问题。
+①、不兼容某些PHP加密方案
+
+直接编辑wp-config.php，插入如下内容开启PHP的错误显示：
+PHP
+error_reporting(E_ALL); 
+ini_set('display_errors', '1');
+1
+2
+    
+error_reporting(E_ALL); 
+ini_set('display_errors', '1');
+
+保险起见，刷新下php，因为opcache可能有缓存：
+
+service php-fpm reload
+
+再次刷新网站，发现原来是鸟哥的Begin加密带来的错误，看来PHP7不支持这个加密形式。好吧，直接找鸟哥要来一份没有加密的Begin，继续测试。
+②、重复函数冲突
+
+替换最新未加密Begin主题之后，毫无意外，还是报错...
+
+看了下，原来是鸟哥把归档页面自动更新的那个函数添加到了主题，和我的子主题已有函数存在冲突。
+
+直接注释其一，搞定！
+③、评论没有内容
+
+解决完上面几个问题之后，正在享受PHP7带来的提速快感，突然发现前台和后台都不显示评论内容了！只显示评论作者等信息。
+
+突然想起之前测试PHP7 RC版本的时候就出现过，但是没有深究直接放弃了。
+
+ 
+
+定位方法很简单，再次开启PHP所有错误显示，然后刷新后台评论界面，发现有如下报错：
+
+PHP7.0正式版编译安装升级及WordPress问题解决分享
+
+原来是preg_replace函数在PHP7中已经弃用了/e 这个参数，改用了 preg_replace_callback 函数。
+
+于是，找到错误所指向的文件及函数，发现是评论贴图功能，于是把/e 去掉或改成/i 试了下，暂时没发现有啥问题，估计贴图功能会有异常吧！
+
+暂时没空研究如何替换成 preg_replace_callback 函数，后面再具体研究学习下。
+三、简单测试
+
+问题解决了，应该测试下性能了。
+
+不过，一直也没用过啥专业的性能测试工具，粗人一个，直接目测后台同一个页面加载效果。
+
+PHP 5.6 加载WordPress后台【所有文章】页面，头部响应耗时2.6s
+
+PHP7.0正式版编译安装升级及WordPress问题解决分享
+
+PHP 7.0 加载WordPress后台【所有文章】页面，头部响应耗时1.5s
+
+PHP7.0正式版编译安装升级及WordPress问题解决分享
+
+简单目测已经高下立分！绝对不是心理作用，后台速度提升相当明显了。
+
+当然，博客前台我一直是用的纯静态，所以升级php7也只是为了提升自己的后台体验！
+
+后面有时间，再来详细深入的测试下php7的性能吧！
